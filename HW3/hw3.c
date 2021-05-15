@@ -9,30 +9,27 @@
 #include<grp.h>
 #include<time.h>
 
-long total_size = 0;
-long open_read(char *dir){
+void open_read(char *dir){
     char tmp[1024];
     DIR* pdir = opendir(dir);
     if(pdir == NULL){
-        return 0;
+        return;
     }
     struct dirent* pEntry = NULL;
-    long local_size = 0;
     int file_num = 0;
     while(((pEntry = readdir(pdir)) != NULL)){
         file_num ++;
         struct stat* buffer = malloc(sizeof(struct stat)) ;
         sprintf(tmp, "%s" ,pEntry->d_name);
-        //sprintf(tmp, "%s/%s", dir, pEntry->d_name);
+        // sprintf(tmp, "%s/%s", dir, pEntry->d_name);
         lstat(tmp, buffer);
-        printf("%s \t",tmp);
+        printf("%s \t",pEntry->d_name);
         if(file_num % 3 == 0){
             printf("\n");
         }
         free(buffer);
     }
     printf("\n");
-    return local_size;
 }
 
 void list(char *dir){
@@ -44,7 +41,7 @@ void list(char *dir){
     struct dirent* pEntry = NULL;
     while(((pEntry = readdir(pdir)) != NULL)){
         struct stat* buffer = malloc(sizeof(struct stat)) ;
-        sprintf(tmp, "%s" ,pEntry->d_name);
+        sprintf(tmp, "%s/%s" ,dir, pEntry->d_name);
         lstat(tmp, buffer);
         //file format
         if(pEntry->d_type == DT_DIR )
@@ -54,52 +51,46 @@ void list(char *dir){
         else
             printf("-");
         //Permission-owners
-        if(buffer->st_mode & S_IRUSR)
+        if((buffer->st_mode & S_IRUSR) == S_IRUSR)
             printf("r");
         else
             printf("-");
-        if(buffer->st_mode & S_IWUSR)
+        if((buffer->st_mode & S_IWUSR) == S_IWUSR)
             printf("w");
         else
             printf("-");
-        if(buffer->st_mode & S_IXUSR)
+        if((buffer->st_mode & S_IXUSR) == S_IXUSR)
             printf("x");
         else
             printf("-");
         //Permission-group
-        if(buffer->st_mode & S_IRGRP)
+        if((buffer->st_mode & S_IRGRP) == S_IRGRP)
             printf("r");
         else
             printf("-");
-        if(buffer->st_mode & S_IWGRP)
+        if((buffer->st_mode & S_IWGRP) == S_IWGRP)
             printf("w");
         else
             printf("-");
-        if(buffer->st_mode & S_IXGRP)
+        if((buffer->st_mode & S_IXGRP) == S_IXGRP)
             printf("x");
         else
             printf("-");
         //Permission-others
-        if(buffer->st_mode & S_IROTH)
+        if((buffer->st_mode & S_IROTH) == S_IROTH)
             printf("r");
         else
             printf("-");
-        if(buffer->st_mode & S_IWOTH)
+        if((buffer->st_mode & S_IWOTH) == S_IWOTH)
             printf("w");
         else
             printf("-");
-        if(buffer->st_mode & S_IXOTH)
+        if((buffer->st_mode & S_IXOTH) == S_IXOTH)
             printf("x");
         else
             printf("-");
         printf(" ");
 
-        //link
-        char *p = calloc(1000, sizeof(char));
-        //char *buf = malloc(123);
-        readlink(tmp, p, sizeof(p));
-        printf("%s ",p);
-        free(p);
         
         //owner
         struct passwd *user = getpwuid(buffer->st_uid);
@@ -110,7 +101,7 @@ void list(char *dir){
         printf("%s ",grp->gr_name);
 
         //size
-        printf("%ld ",buffer->st_size);
+        printf("%7ld ",buffer->st_size);
 
         //time
         time_t rawtime = buffer->st_mtime;
@@ -119,7 +110,14 @@ void list(char *dir){
         strftime(str, sizeof(str), "%x %H:%M", ptr_time );
  	    printf("%s ", str );
 
-        printf("%s \t",tmp);
+        //link
+        printf("%s", pEntry->d_name);
+        if(pEntry->d_type == DT_LNK ){
+            char *p = calloc(2048, sizeof(char));
+            readlink(tmp, p, 2048);
+            printf(" -> %s ",p);
+            free(p);
+        }
         printf("\n");
         free(buffer);
     }
@@ -127,18 +125,26 @@ void list(char *dir){
 int main(int argc, char** args){
     long size = 0;
     char* dir;
-    if(argc < 2){
-        dir = ".";
-        size = open_read(dir);
+    int flag = 0;
+    for(int i = 0;i < argc ; i++){
+        if (!strcmp(args[i],"-l")){
+            flag = 1;
+        }
     }
-    else if(argc == 2){
-        dir = args[1];
-        size = open_read(dir);
-    }
-    else if (argc == 3){
-        dir = args[1];
+    if(flag){
+        if(argc < 3)
+            dir = ".";
+        else
+            dir = args[1];
         list(dir);
-        //printf("%s\n",args[1]);
     }
+    else{
+        if(argc < 2)
+            dir = ".";
+        else
+            dir = args[1];
+        open_read(dir);
+    }
+   
     return 0;
 }
