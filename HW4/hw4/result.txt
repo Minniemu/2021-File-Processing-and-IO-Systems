@@ -1,0 +1,9 @@
+Readahead = 0
+Sequential Read took 86924 (us)
+Random read took 995481 (us)
+readahead = 16
+Sequential Read took 77012 (us)
+Random read took 947488 (us)
+Readahead = 64
+Sequential Read took 63438 (us)
+Random read took 937982 (us)
